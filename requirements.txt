@@ -4,3 +4,4 @@ Janome==0.5.0
 matplotlib==3.8.3
 gensim==4.3.2
 scikit-learn==1.4.1.post1
+beautifulsoup4==4.12.3
