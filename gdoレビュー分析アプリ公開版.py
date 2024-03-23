@@ -103,7 +103,7 @@ def main():
         data_list = []
         for url in urlall:
             response = requests.get(url)
-            time.sleep(3)
+            time.sleep(1)
             html = response.text
             data_list.extend(parse_reviews(html))
 
@@ -168,7 +168,7 @@ def main():
 
         # エクセルファイルをダウンロードするボタン
         st.markdown(get_table_download_link(df_all), unsafe_allow_html=True)
-
+        
 def get_table_download_link(df):
     csv = df.to_csv(index=False, encoding='shift-jis')
     b64 = base64.b64encode(csv.encode()).decode()
