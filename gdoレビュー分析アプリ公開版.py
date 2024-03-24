@@ -91,7 +91,7 @@ def main():
     st.title("GDO口コミ分析")
 
     # ユーザー入力
-    url = st.text_input("分析したいURLを入力してください:")
+    url = st.text_input("URLを入力してください:")
     pageNum = st.number_input("ページ数を入力してください:", value=3, step=1)
 
     if st.button("口コミを分析する"):
@@ -149,7 +149,7 @@ def main():
         plt.barh(top_words['Word'], top_words['Frequency'], color='skyblue')
         plt.xlabel('出現回数', fontsize=14)
         plt.ylabel('単語', fontsize=14)
-        plt.title('口コミにおける頻出単語の出現回数', fontsize=16)
+        plt.title('単語の出現回数', fontsize=16)
         plt.tight_layout()
 
         # Streamlitで表示
