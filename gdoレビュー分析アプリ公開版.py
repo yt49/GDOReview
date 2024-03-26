@@ -22,6 +22,7 @@ import unicodedata
 import re
 import japanize_matplotlib
 import base64
+import sys
 
 def fetch_reviews(url):
     response = requests.get(url)
@@ -168,6 +169,11 @@ def main():
         
         # エクセルファイルをダウンロードするボタン
         st.markdown(get_table_download_link(df_all), unsafe_allow_html=True)
+
+        # Streamlitのエンコーディング設定
+        st.set_page_config(page_title="GDO口コミ分析", layout="wide", initial_sidebar_state="expanded")
+        reload(sys)
+        sys.setdefaultencoding('utf-8')
         
 def get_table_download_link(df):
     csv = df.to_csv(index=False, encoding='utf-8-sig')
