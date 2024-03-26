@@ -110,40 +110,40 @@ def main():
         # データフレーム作成
         df_all = pd.DataFrame(data_list)
         df_all.loc['平均'] = df_all[['満足度', 'デザイン', 'コスト感', '平均スコア', 'ヘッドスピード', '平均飛距離']].mean()
-
+        
         # CSV出力
-        df_all.to_csv('df_all.csv', index=False, encoding='utf-8-sig')
-
+        df_all.to_csv('df_all.csv', index=False, encoding='shift-jis')
+        
         # テキスト読み込み
         file_path = 'df_all.csv'
         column_name = 'レビューコメント'
-        texts = read_text_from_csv(file_path, column_name, encoding='utf-8')
-
+        texts = read_text_from_csv(file_path, column_name, encoding='shift-jis')
+        
         # 形態素解析とフレーズ化
         tokenized_texts = tokenize_texts(texts)
         phrases = Phrases(tokenized_texts, min_count=5, threshold=10)
         phraser = Phraser(phrases)
         phrase_texts = phraser[tokenized_texts]
         processed_texts = [' '.join(tokens) for tokens in phrase_texts]
-
+        
         # テキストをベクトル化
         vectorizer = CountVectorizer()
         X = vectorizer.fit_transform(processed_texts)
-
+        
         # 語彙とその出現頻度を取得
         vocabulary = vectorizer.vocabulary_
         word_frequencies = X.toarray().sum(axis=0)
-
+        
         # 出現頻度の高い順にソートした単語リストを作成
         sorted_vocab = sorted(vocabulary.items(), key=lambda x: word_frequencies[vocabulary[x[0]]], reverse=True)
-
+        
         # 出現回数の少ない順に並べる
         df_most_common = pd.DataFrame({'Word': [word for word, _ in sorted_vocab],
                                        'Frequency': [word_frequencies[vocabulary[word]] for word, _ in sorted_vocab]})
-
+        
         # 上位10件の単語とフレーズを取得
         top_words = df_most_common.head(10)
-
+        
         # 棒グラフの描画
         plt.figure(figsize=(10, 8))
         plt.barh(top_words['Word'], top_words['Frequency'], color='skyblue')
@@ -151,21 +151,21 @@ def main():
         plt.ylabel('単語', fontsize=14)
         plt.title('単語の出現回数', fontsize=16)
         plt.tight_layout()
-
+        
         # Streamlitで表示
         st.pyplot(plt)
-
+        
         # df_allにmost_commonを連結
-        df_all = pd.read_csv('df_all.csv', encoding='utf-8-sig')
+        df_all = pd.read_csv('df_all.csv', encoding='shift-jis')
         df_all['most_common_Word'] = df_most_common['Word']
         df_all['most_common_Frequency'] = df_most_common['Frequency']
-
+        
         # 新しいDataFrameをCSVファイルとして出力
-        df_all.to_csv('df_all_with_most_common.csv', index=False, encoding='utf-8')
-
+        df_all.to_csv('df_all_with_most_common.csv', index=False, encoding='shift-jis')
+        
         # 表示
         st.write(df_all)
-
+        
         # エクセルファイルをダウンロードするボタン
         st.markdown(get_table_download_link(df_all), unsafe_allow_html=True)
         
