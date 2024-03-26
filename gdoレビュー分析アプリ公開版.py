@@ -160,8 +160,8 @@ def main():
         df_all['most_common_Word'] = df_most_common['Word']
         df_all['most_common_Frequency'] = df_most_common['Frequency']
 
-        # 新しいDataFrameをCSVファイルとして出力
-        df_all.to_csv('df_all_with_most_common.csv', index=False, encoding='shift-jis')
+        # CSV出力
+        df_all.to_csv('df_all.csv', index=False, encoding='utf-8-sig')
 
         # 表示
         st.write(df_all)
