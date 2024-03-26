@@ -112,12 +112,12 @@ def main():
         df_all.loc['平均'] = df_all[['満足度', 'デザイン', 'コスト感', '平均スコア', 'ヘッドスピード', '平均飛距離']].mean()
 
         # CSV出力
-        df_all.to_csv('df_all.csv', index=False, encoding='shift-jis')
+        df_all.to_csv('df_all.csv', index=False, encoding='utf-8-sig')
 
         # テキスト読み込み
         file_path = 'df_all.csv'
         column_name = 'レビューコメント'
-        texts = read_text_from_csv(file_path, column_name, encoding='shift-jis')
+        texts = read_text_from_csv(file_path, column_name, encoding='utf-8-sig')
 
         # 形態素解析とフレーズ化
         tokenized_texts = tokenize_texts(texts)
@@ -160,8 +160,8 @@ def main():
         df_all['most_common_Word'] = df_most_common['Word']
         df_all['most_common_Frequency'] = df_most_common['Frequency']
 
-        # CSV出力
-        df_all.to_csv('df_all.csv', index=False, encoding='utf-8-sig')
+        # 新しいDataFrameをCSVファイルとして出力
+        df_all.to_csv('df_all_with_most_common.csv', index=False, encoding='utf-8-sig')
 
         # 表示
         st.write(df_all)
