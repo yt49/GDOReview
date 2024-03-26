@@ -156,7 +156,7 @@ def main():
         st.pyplot(plt)
 
         # df_allにmost_commonを連結
-        df_all = pd.read_csv('df_all.csv', encoding='utf-8')
+        df_all = pd.read_csv('df_all.csv', encoding='utf-8-sig')
         df_all['most_common_Word'] = df_most_common['Word']
         df_all['most_common_Frequency'] = df_most_common['Frequency']
 
