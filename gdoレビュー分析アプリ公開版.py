@@ -170,7 +170,7 @@ def main():
         st.markdown(get_table_download_link(df_all), unsafe_allow_html=True)
 
 def get_table_download_link(df):
-    csv = df.to_csv(index=False, encoding='utf-8-sig')
+    csv = df.to_csv(index=False, encoding='shift-jis')  
     b64 = base64.b64encode(csv.encode()).decode()
     href = f'<a href="data:file/csv;base64,{b64}" download="df_all_with_most_common.csv">CSVファイルをダウンロードする</a>'
     return href
