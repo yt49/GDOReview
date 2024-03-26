@@ -117,7 +117,7 @@ def main():
         # テキスト読み込み
         file_path = 'df_all.csv'
         column_name = 'レビューコメント'
-        texts = read_text_from_csv(file_path, column_name, encoding='utf-8-sig')
+        texts = read_text_from_csv(file_path, column_name, encoding='utf-8')
 
         # 形態素解析とフレーズ化
         tokenized_texts = tokenize_texts(texts)
@@ -156,12 +156,12 @@ def main():
         st.pyplot(plt)
 
         # df_allにmost_commonを連結
-        df_all = pd.read_csv('df_all.csv', encoding='shift-jis')
+        df_all = pd.read_csv('df_all.csv', encoding='utf-8')
         df_all['most_common_Word'] = df_most_common['Word']
         df_all['most_common_Frequency'] = df_most_common['Frequency']
 
         # 新しいDataFrameをCSVファイルとして出力
-        df_all.to_csv('df_all_with_most_common.csv', index=False, encoding='utf-8-sig')
+        df_all.to_csv('df_all_with_most_common.csv', index=False, encoding='utf-8')
 
         # 表示
         st.write(df_all)
@@ -170,7 +170,7 @@ def main():
         st.markdown(get_table_download_link(df_all), unsafe_allow_html=True)
         
 def get_table_download_link(df):
-    csv = df.to_csv(index=False, encoding='shift-jis')
+    csv = df.to_csv(index=False, encoding='utf-8')
     b64 = base64.b64encode(csv.encode()).decode()
     href = f'<a href="data:file/csv;base64,{b64}" download="df_all_with_most_common.csv">CSVファイルをダウンロードする</a>'
     return href
