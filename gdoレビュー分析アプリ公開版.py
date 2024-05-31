@@ -14,6 +14,8 @@ import re
 import japanize_matplotlib
 import base64
 import io
+import hashlib
+import xlsxwriter
 
 def fetch_reviews(url):
     response = requests.get(url)
@@ -68,6 +70,10 @@ def parse_reviews(html):
 
     return data_list
 
+def get_review_hash(review_data):
+    review_str = ''.join(str(value) for value in review_data.values())
+    return hashlib.md5(review_str.encode()).hexdigest()
+
 def read_text_from_csv(file_path, column_name, encoding='utf-8'):
     df = pd.read_csv(file_path, encoding=encoding)
     df[column_name] = df[column_name].fillna('')
@@ -89,15 +95,22 @@ def main():
     if st.button("口コミを分析する"):
         # スクレイピング
         st.write("ちょっとまってね...")
-        urlbase = url
+        urlbase = url.rstrip('/')  # URLの末尾のスラッシュを削除
         urlall = [f"{urlbase}?p={i}" for i in range(1, pageNum + 1)]
 
         data_list = []
+        review_hashes = set()
+
         for url in urlall:
             response = requests.get(url)
-            time.sleep(1)
+            time.sleep(2)  # 2秒の待機時間を設定
             html = response.text
-            data_list.extend(parse_reviews(html))
+            reviews = parse_reviews(html)
+            for review in reviews:
+                review_hash = get_review_hash(review)
+                if review_hash not in review_hashes:
+                    data_list.append(review)
+                    review_hashes.add(review_hash)
 
         # データフレーム作成
         df_all = pd.DataFrame(data_list)
@@ -169,7 +182,7 @@ def get_excel_download_link(df):
         df.to_excel(writer, index=False, sheet_name='Sheet1')
     excel_data = excel_buffer.getvalue()
     b64 = base64.b64encode(excel_data).decode()
-    href = f'<a href="data:application/octet-stream;base64,{b64}" download="df_all_with_most_common.xlsx">エクセルファイルをダウンロードする</a>'
+    href = f'<a href="data:application/octet-stream;base64,{b64}" download="口コミ分析.xlsx">ダウンロード</a>'
     return href
 
 if __name__ == "__main__":
