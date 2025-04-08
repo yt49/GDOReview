@@ -6,6 +6,7 @@ from janome.analyzer import Analyzer
 from janome.tokenfilter import POSKeepFilter
 from gensim.models.phrases import Phrases, Phraser
 from sklearn.feature_extraction.text import CountVectorizer
+from datetime import datetime
 import requests
 from bs4 import BeautifulSoup
 import time
@@ -85,105 +86,84 @@ def tokenize_texts(texts):
     analyzer = Analyzer(tokenizer=t, token_filters=token_filters)
     return [[token.surface for token in analyzer.analyze(unicodedata.normalize('NFKC', text))] for text in texts]
 
-def main():
-    st.title("GDO口コミ分析")
+def get_excel_download_link(buffer, filename):
+    b64 = base64.b64encode(buffer.getvalue()).decode()
+    return f'<a href="data:application/octet-stream;base64,{b64}" download="{filename}">⬇️ {filename} をダウンロード</a>'
 
-    # ユーザー入力
+def main():
+    st.title("GDO口コミ分析ツール")
+
     url = st.text_input("URLを入力してください:")
-    pageNum = st.number_input("ページ数を入力してください:", value=3, step=1)
+    model_name = st.text_input("モデル名を入力してください（例：XXIO12）")
 
     if st.button("口コミを分析する"):
-        # スクレイピング
-        st.write("ちょっとまってね...")
-        urlbase = url.rstrip('/')  # URLの末尾のスラッシュを削除
-        urlall = [f"{urlbase}?p={i}" for i in range(1, pageNum + 1)]
+        with st.spinner("口コミ収集中..."):
+            urlbase = url.rstrip('/')
+            page = 1
+            data_list = []
+            review_hashes = set()
 
-        data_list = []
-        review_hashes = set()
+            while True:
+                full_url = f"{urlbase}?p={page}"
+                response = requests.get(full_url)
+                time.sleep(2)
+                html = response.text
+                reviews = parse_reviews(html)
 
-        for url in urlall:
-            response = requests.get(url)
-            time.sleep(2)  # 2秒の待機時間を設定
-            html = response.text
-            reviews = parse_reviews(html)
-            for review in reviews:
-                review_hash = get_review_hash(review)
-                if review_hash not in review_hashes:
-                    data_list.append(review)
-                    review_hashes.add(review_hash)
+                if not reviews:
+                    break
 
-        # データフレーム作成
+                for review in reviews:
+                    review_hash = get_review_hash(review)
+                    if review_hash not in review_hashes:
+                        data_list.append(review)
+                        review_hashes.add(review_hash)
+
+                page += 1
+
+        if not data_list:
+            st.error("口コミが見つかりませんでした。")
+            return
+
         df_all = pd.DataFrame(data_list)
         df_all.loc['平均'] = df_all[['満足度', 'デザイン', 'コスト感', '平均スコア', 'ヘッドスピード', '平均飛距離']].mean()
-        
-        # CSV出力
-        df_all.to_csv('df_all.csv', index=False, encoding='utf-8-sig')
-        
-        # テキスト読み込み
-        file_path = 'df_all.csv'
-        column_name = 'レビューコメント'
-        texts = read_text_from_csv(file_path, column_name, encoding='utf-8-sig')
-        
-        # 形態素解析とフレーズ化
+
+        texts = df_all['レビューコメント'].fillna('').tolist()
         tokenized_texts = tokenize_texts(texts)
         phrases = Phrases(tokenized_texts, min_count=5, threshold=10)
         phraser = Phraser(phrases)
         phrase_texts = phraser[tokenized_texts]
         processed_texts = [' '.join(tokens) for tokens in phrase_texts]
-        
-        # テキストをベクトル化
+
         vectorizer = CountVectorizer()
         X = vectorizer.fit_transform(processed_texts)
-        
-        # 語彙とその出現頻度を取得
         vocabulary = vectorizer.vocabulary_
         word_frequencies = X.toarray().sum(axis=0)
-        
-        # 出現頻度の高い順にソートした単語リストを作成
+
         sorted_vocab = sorted(vocabulary.items(), key=lambda x: word_frequencies[vocabulary[x[0]]], reverse=True)
-        
-        # 出現回数の少ない順に並べる
-        df_most_common = pd.DataFrame({'Word': [word for word, _ in sorted_vocab],
-                                       'Frequency': [word_frequencies[vocabulary[word]] for word, _ in sorted_vocab]})
-        
-        # 上位10件の単語とフレーズを取得
+        df_most_common = pd.DataFrame({
+            'Word': [word for word, _ in sorted_vocab],
+            'Frequency': [word_frequencies[vocabulary[word]] for word, _ in sorted_vocab]
+        })
         top_words = df_most_common.head(10)
-        
-        # 棒グラフの描画
+
         plt.figure(figsize=(10, 8))
         plt.barh(top_words['Word'], top_words['Frequency'], color='skyblue')
         plt.xlabel('出現回数', fontsize=14)
         plt.ylabel('単語', fontsize=14)
         plt.title('単語の出現回数', fontsize=16)
         plt.tight_layout()
-        
-        # Streamlitで表示
         st.pyplot(plt)
-        
-        # df_allにmost_commonを連結
-        df_all = pd.read_csv('df_all.csv', encoding='utf-8-sig')
-        df_all['most_common_Word'] = df_most_common['Word']
-        df_all['most_common_Frequency'] = df_most_common['Frequency']
-        
-        # 新しいDataFrameをExcelファイルとして出力
+
+        today = datetime.now().strftime('%Y%m%d')
+        filename = f"{model_name}_{today}.xlsx"
+
         excel_buffer = io.BytesIO()
         with pd.ExcelWriter(excel_buffer, engine='xlsxwriter') as writer:
             df_all.to_excel(writer, index=False, sheet_name='Sheet1')
-        
-        # 表示
-        st.write(df_all)
-        
-        # エクセルファイルをダウンロードするボタン
-        st.markdown(get_excel_download_link(df_all), unsafe_allow_html=True)
 
-def get_excel_download_link(df):
-    excel_buffer = io.BytesIO()
-    with pd.ExcelWriter(excel_buffer, engine='xlsxwriter') as writer:
-        df.to_excel(writer, index=False, sheet_name='Sheet1')
-    excel_data = excel_buffer.getvalue()
-    b64 = base64.b64encode(excel_data).decode()
-    href = f'<a href="data:application/octet-stream;base64,{b64}" download="口コミ分析.xlsx">ダウンロード</a>'
-    return href
+        st.write(df_all)
+        st.markdown(get_excel_download_link(excel_buffer, filename), unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
